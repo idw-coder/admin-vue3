@@ -15,7 +15,10 @@ jobs:
           username: ${{ secrets.LIGHTSAIL_USER }}
           key: ${{ secrets.LIGHTSAIL_SSH_KEY }}
           script: |
-            cd /var/www/app/admin-vue3
+            cd /var/www/app
             git pull origin main
+            cd admin-vue3
             npm install
             npm run build-only
+            cd /var/www/app
+            docker compose -f docker-compose.prod.yml up -d --build backend

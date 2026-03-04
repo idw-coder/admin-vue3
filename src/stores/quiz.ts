@@ -52,6 +52,7 @@ export const useQuizStore = defineStore('quiz', {
     quizzes: [] as Quiz[],
     currentQuiz: null as Quiz | null,
     tags: [] as QuizTag[],
+    categoryTags: [] as QuizTag[],
     loading: false,
     error: null as string | null,
   }),
@@ -60,14 +61,23 @@ export const useQuizStore = defineStore('quiz', {
       const res = await api.get('/quiz/categories')
       this.categories = res.data
     },
-    async fetchQuizzesByCategory(categoryId: number) {
+    async fetchQuizzesByCategory(
+      categoryId: number,
+      params?: { tagSlug?: string; q?: string },
+    ) {
       this.loading = true
       try {
-        const res = await api.get(`/quiz/category/${categoryId}/quizzes`)
+        const res = await api.get(`/quiz/category/${categoryId}/quizzes`, {
+          params,
+        })
         this.quizzes = res.data
       } finally {
         this.loading = false
       }
+    },
+    async fetchTagsByCategory(categoryId: number) {
+      const res = await api.get(`/quiz/category/${categoryId}/tags`)
+      this.categoryTags = res.data
     },
     async fetchQuiz(id: number) {
       this.loading = true

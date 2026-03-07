@@ -11,6 +11,7 @@
           variant="outlined"
           density="compact"
           hide-details
+          clearable
           @update:model-value="onCategoryChange"
         />
       </v-col>
@@ -36,7 +37,6 @@
           hide-details
           clearable
           prepend-inner-icon="mdi-magnify"
-          :disabled="!selectedCategoryId"
           @keydown.enter="fetchQuizzes"
           @click:clear="onClearSearch"
         />
@@ -46,18 +46,12 @@
       </v-col>
     </v-row>
 
-    <v-card v-if="!selectedCategoryId">
-      <v-card-text class="text-center text-medium-emphasis">
-        カテゴリを選択してください
-      </v-card-text>
-    </v-card>
-
     <v-data-table
-      v-else
       class="quiz-table"
       :headers="headers"
-      :items="store.quizzes"
+      :items="filteredQuizzes"
       :loading="store.loading"
+      :group-by="groupBy"
       item-value="id"
       hover
       fixed-header
@@ -94,6 +88,8 @@ const selectedCategoryId = ref<number | null>(null)
 const selectedTagSlug = ref<string | null>(null)
 const searchQuery = ref('')
 
+const groupBy = [{ key: 'category_name', order: 'asc' as const }]
+
 const headers = [
   { title: 'ID', key: 'id', width: '70px' },
   { title: 'Slug', key: 'slug', width: '150px' },
@@ -102,30 +98,54 @@ const headers = [
   { title: '操作', key: 'actions', sortable: false, width: '120px', align: 'center' as const },
 ]
 
-const categoryItems = computed(() =>
-  store.categories.map((c) => ({ title: c.category_name, value: c.id })),
-)
+const categoryItems = computed(() => [
+  ...store.categories.map((c) => ({ title: c.category_name, value: c.id })),
+])
 
 const tagItems = computed(() => store.categoryTags.map((t) => ({ title: t.name, value: t.slug })))
 
+const filteredQuizzes = computed(() => {
+  let quizzes = store.quizzes
+
+  if (selectedCategoryId.value) {
+    quizzes = quizzes.filter((q) => q.category_id === selectedCategoryId.value)
+  }
+
+  if (selectedTagSlug.value) {
+    quizzes = quizzes.filter((q) =>
+      q.tags?.some((t) => t.slug === selectedTagSlug.value),
+    )
+  }
+
+  if (searchQuery.value) {
+    const query = searchQuery.value.toLowerCase()
+    quizzes = quizzes.filter((q) => q.question.toLowerCase().includes(query))
+  }
+
+  return quizzes
+})
+
 const fetchQuizzes = () => {
-  if (!selectedCategoryId.value) return
-  const params: { tagSlug?: string; q?: string } = {}
-  if (selectedTagSlug.value) params.tagSlug = selectedTagSlug.value
-  if (searchQuery.value) params.q = searchQuery.value
-  store.fetchQuizzesByCategory(selectedCategoryId.value, params)
+  if (selectedCategoryId.value) {
+    const params: { tagSlug?: string; q?: string } = {}
+    if (selectedTagSlug.value) params.tagSlug = selectedTagSlug.value
+    if (searchQuery.value) params.q = searchQuery.value
+    store.fetchQuizzesByCategory(selectedCategoryId.value, params)
+  } else {
+    store.fetchAllQuizzes()
+  }
 }
 
-const onCategoryChange = (id: number) => {
+const onCategoryChange = (id: number | null) => {
   selectedTagSlug.value = null
   searchQuery.value = ''
-  store.fetchTagsByCategory(id)
-  store.fetchQuizzesByCategory(id)
+  if (id) {
+    store.fetchTagsByCategory(id)
+  }
 }
 
 const onClearSearch = () => {
   searchQuery.value = ''
-  fetchQuizzes()
 }
 
 const handleDelete = async (id: number) => {
@@ -134,7 +154,7 @@ const handleDelete = async (id: number) => {
 }
 
 onMounted(() => {
-  store.fetchCategories()
+  store.fetchAllQuizzes()
 })
 </script>
 

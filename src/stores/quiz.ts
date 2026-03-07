@@ -28,6 +28,7 @@ export interface Quiz {
   question: string
   explanation: string
   category_id: number
+  category_name?: string
   author_id?: number
   choices?: QuizChoice[]
   tags?: QuizTag[]
@@ -60,6 +61,28 @@ export const useQuizStore = defineStore('quiz', {
     async fetchCategories() {
       const res = await api.get('/quiz/categories')
       this.categories = res.data
+    },
+    async fetchAllQuizzes() {
+      this.loading = true
+      try {
+        if (this.categories.length === 0) {
+          await this.fetchCategories()
+        }
+        const categoryMap = new Map(this.categories.map((c) => [c.id, c.category_name]))
+        const results = await Promise.all(
+          this.categories.map(async (cat) => {
+            const res = await api.get(`/quiz/category/${cat.id}/quizzes`)
+            return (res.data as Quiz[]).map((q) => ({
+              ...q,
+              category_id: cat.id,
+              category_name: categoryMap.get(cat.id) ?? '',
+            }))
+          }),
+        )
+        this.quizzes = results.flat()
+      } finally {
+        this.loading = false
+      }
     },
     async fetchQuizzesByCategory(
       categoryId: number,

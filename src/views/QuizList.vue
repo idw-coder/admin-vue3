@@ -41,10 +41,84 @@
           @click:clear="onClearSearch"
         />
       </v-col>
-      <v-col cols="12" sm="2" class="d-flex justify-end">
+      <v-col cols="12" sm="auto" class="d-flex justify-end gap-2 flex-wrap">
+        <v-btn
+          variant="tonal"
+          prepend-icon="mdi-download"
+          :loading="exporting"
+          @click="handleExport"
+        >
+          CSV出力
+        </v-btn>
+        <v-btn variant="tonal" prepend-icon="mdi-upload" @click="importDialog = true">
+          CSV取込
+        </v-btn>
         <v-btn color="primary" to="/quizzes/new" prepend-icon="mdi-plus"> クイズ作成 </v-btn>
       </v-col>
     </v-row>
+
+    <!-- インポートダイアログ -->
+    <v-dialog v-model="importDialog" max-width="520">
+      <v-card>
+        <v-card-title>CSVインポート</v-card-title>
+        <v-card-text>
+          <v-alert type="info" variant="tonal" density="compact" class="mb-4">
+            <div class="d-flex align-center justify-space-between">
+              <span>フォーマットが分からない場合はサンプルをダウンロードしてください</span>
+              <v-btn
+                variant="text"
+                size="small"
+                prepend-icon="mdi-file-download"
+                :href="sampleCsvUrl"
+                target="_blank"
+              >
+                サンプルCSV
+              </v-btn>
+            </div>
+          </v-alert>
+          <input
+            ref="fileInputRef"
+            type="file"
+            accept=".csv"
+            :disabled="importing"
+            style="display: none"
+            @change="onNativeFileChange"
+          />
+          <v-btn
+            variant="outlined"
+            prepend-icon="mdi-file-delimited"
+            block
+            :disabled="importing"
+            @click="fileInputRef?.click()"
+          >
+            {{ fileName || 'CSVファイルを選択' }}
+          </v-btn>
+          <v-alert v-if="importResult" :type="importResult.error_count > 0 ? 'warning' : 'success'" class="mt-2" density="compact">
+            <div>作成: {{ importResult.created_count }}件 / 更新: {{ importResult.updated_count }}件 / エラー: {{ importResult.error_count }}件</div>
+            <div v-if="importResult.created_tags.length > 0" class="mt-1 text-caption">
+              新規タグ作成: {{ importResult.created_tags.join(', ') }}
+            </div>
+            <div v-if="importResult.errors.length > 0" class="mt-1 text-caption">
+              <div v-for="(err, i) in importResult.errors" :key="i">{{ err }}</div>
+            </div>
+          </v-alert>
+          <v-alert v-if="importError" type="error" class="mt-2" density="compact">{{ importError }}</v-alert>
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer />
+          <v-btn variant="text" @click="closeImportDialog">閉じる</v-btn>
+          <v-btn
+            color="primary"
+            variant="flat"
+            :loading="importing"
+            :disabled="!fileName"
+            @click="handleImport"
+          >
+            インポート
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
 
     <v-data-table
       class="quiz-table"
@@ -87,6 +161,25 @@ const store = useQuizStore()
 const selectedCategoryId = ref<number | null>(null)
 const selectedTagSlug = ref<string | null>(null)
 const searchQuery = ref('')
+
+const exporting = ref(false)
+const importDialog = ref(false)
+const fileInputRef = ref<HTMLInputElement | null>(null)
+const fileName = ref('')
+let rawFile: File | null = null
+const importing = ref(false)
+const importResult = ref<{
+  created_count: number
+  updated_count: number
+  error_count: number
+  created_tags_count: number
+  created: string[]
+  updated: string[]
+  errors: string[]
+  created_tags: string[]
+} | null>(null)
+const importError = ref<string | null>(null)
+const sampleCsvUrl = import.meta.env.PROD ? '/api/quiz/csv/sample' : 'http://localhost:8888/api/quiz/csv/sample'
 
 const groupBy = [{ key: 'category_name', order: 'asc' as const }]
 
@@ -151,6 +244,56 @@ const onClearSearch = () => {
 const handleDelete = async (id: number) => {
   if (!confirm('削除しますか？')) return
   await store.removeQuiz(id)
+}
+
+const handleExport = async () => {
+  exporting.value = true
+  try {
+    await store.exportCsv(selectedCategoryId.value ?? undefined)
+  } finally {
+    exporting.value = false
+  }
+}
+
+const onNativeFileChange = (e: Event) => {
+  const input = e.target as HTMLInputElement
+  rawFile = input.files?.[0] ?? null
+  fileName.value = rawFile?.name ?? ''
+}
+
+const readFileAsText = (file: File): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => resolve(reader.result as string)
+    reader.onerror = () => reject(new Error('ファイルの読み込みに失敗しました'))
+    reader.readAsText(file, 'UTF-8')
+  })
+}
+
+const handleImport = async () => {
+  if (!rawFile) return
+  importing.value = true
+  importResult.value = null
+  importError.value = null
+  try {
+    const csvText = await readFileAsText(rawFile)
+    const result = await store.importCsv(csvText)
+    importResult.value = result
+    await store.fetchAllQuizzes()
+  } catch (e: any) {
+    importError.value = e?.response?.data?.error ?? 'インポートに失敗しました'
+  } finally {
+    importing.value = false
+  }
+}
+
+const closeImportDialog = () => {
+  importDialog.value = false
+  rawFile = null
+  fileName.value = ''
+  if (fileInputRef.value) fileInputRef.value.value = ''
+  importResult.value = null
+  importError.value = null
 }
 
 onMounted(() => {

@@ -172,5 +172,33 @@ export const useQuizStore = defineStore('quiz', {
       await api.delete(`/quiz/${id}`)
       this.quizzes = this.quizzes.filter((q) => q.id !== id)
     },
+    async exportCsv(categoryId?: number) {
+      const params = categoryId ? { category_id: categoryId } : {}
+      const res = await api.get('/quiz/csv/export', {
+        params,
+        responseType: 'blob',
+      })
+      const blob = new Blob([res.data], { type: 'text/csv;charset=utf-8;' })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `quizzes_${Date.now()}.csv`
+      a.click()
+      URL.revokeObjectURL(url)
+    },
+    async importCsv(csvText: string) {
+      const res = await api.post('/quiz/csv/import', { csv: csvText })
+      return res.data as {
+        message: string
+        created_count: number
+        updated_count: number
+        error_count: number
+        created_tags_count: number
+        created: string[]
+        updated: string[]
+        errors: string[]
+        created_tags: string[]
+      }
+    },
   },
 })

@@ -5,7 +5,9 @@ export interface QuizCategory {
   id: number
   slug: string
   category_name: string
-  description: string
+  description?: string
+  thumbnail_path?: string
+  display_order?: number
   author_id?: number
 }
 
@@ -61,6 +63,35 @@ export const useQuizStore = defineStore('quiz', {
     async fetchCategories() {
       const res = await api.get('/quiz/categories')
       this.categories = res.data
+    },
+    async createCategory(params: {
+      slug: string
+      category_name: string
+      description?: string
+      thumbnail_path?: string
+      display_order?: number
+    }) {
+      const res = await api.post('/quiz/categories', params)
+      this.categories.push(res.data)
+      return res.data
+    },
+    async updateCategory(
+      id: number,
+      params: {
+        slug?: string
+        category_name?: string
+        description?: string
+        thumbnail_path?: string
+        display_order?: number
+      },
+    ) {
+      const res = await api.put(`/quiz/categories/${id}`, params)
+      this.categories = this.categories.map((c) => (c.id === id ? res.data : c))
+      return res.data
+    },
+    async removeCategory(id: number) {
+      await api.delete(`/quiz/categories/${id}`)
+      this.categories = this.categories.filter((c) => c.id !== id)
     },
     async fetchAllQuizzes() {
       this.loading = true

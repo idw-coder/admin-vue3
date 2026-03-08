@@ -5,6 +5,7 @@
         <v-list-item to="/" title="ダッシュボード" prepend-icon="mdi-home" />
         <v-list-item to="/notes/new" title="ノート作成" prepend-icon="mdi-note-plus" />
         <v-list-item to="/quizzes" title="クイズ管理" prepend-icon="mdi-help-circle" />
+        <v-list-item to="/quiz-categories" title="カテゴリー管理" prepend-icon="mdi-shape" />
         <v-list-item to="/quiz-tags" title="クイズタグ管理" prepend-icon="mdi-tag" />
         <v-list-item to="/users" title="ユーザー管理" prepend-icon="mdi-account" />
       </v-list>

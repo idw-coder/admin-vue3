@@ -15,6 +15,7 @@ const router = createRouter({
         { path: 'quizzes', component: () => import('@/views/QuizList.vue') },
         { path: 'quizzes/new', component: () => import('@/views/QuizEdit.vue') },
         { path: 'quizzes/:id/edit', component: () => import('@/views/QuizEdit.vue') },
+        { path: 'quiz-categories', component: () => import('@/views/QuizCategoryManage.vue') },
         { path: 'quiz-tags', component: () => import('@/views/QuizTagManage.vue') },
         { path: 'users', component: () => import('@/views/UserManage.vue') },
       ],

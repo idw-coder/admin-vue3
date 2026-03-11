@@ -1,8 +1,27 @@
 <template>
-  <div>
-    <h1 class="text-h5 mb-4">クイズ管理</h1>
+  <div class="quiz-list-page">
+    <div class="d-flex align-center justify-space-between mb-2">
+      <h1 class="text-subtitle-1 font-weight-bold">クイズ管理</h1>
+      <div class="d-flex gap-1">
+        <v-btn
+          variant="tonal"
+          size="small"
+          prepend-icon="mdi-download"
+          :loading="exporting"
+          @click="handleExport"
+        >
+          CSV出力
+        </v-btn>
+        <v-btn variant="tonal" size="small" prepend-icon="mdi-upload" @click="importDialog = true">
+          CSV取込
+        </v-btn>
+        <v-btn color="primary" size="small" to="/quizzes/new" prepend-icon="mdi-plus">
+          クイズ作成
+        </v-btn>
+      </div>
+    </div>
 
-    <v-row class="mb-4" align="center">
+    <v-row dense class="mb-2" align="center">
       <v-col cols="12" sm="4">
         <v-select
           v-model="selectedCategoryId"
@@ -40,20 +59,6 @@
           @keydown.enter="fetchQuizzes"
           @click:clear="onClearSearch"
         />
-      </v-col>
-      <v-col cols="12" sm="auto" class="d-flex justify-end gap-2 flex-wrap">
-        <v-btn
-          variant="tonal"
-          prepend-icon="mdi-download"
-          :loading="exporting"
-          @click="handleExport"
-        >
-          CSV出力
-        </v-btn>
-        <v-btn variant="tonal" prepend-icon="mdi-upload" @click="importDialog = true">
-          CSV取込
-        </v-btn>
-        <v-btn color="primary" to="/quizzes/new" prepend-icon="mdi-plus"> クイズ作成 </v-btn>
       </v-col>
     </v-row>
 
@@ -93,8 +98,16 @@
           >
             {{ fileName || 'CSVファイルを選択' }}
           </v-btn>
-          <v-alert v-if="importResult" :type="importResult.error_count > 0 ? 'warning' : 'success'" class="mt-2" density="compact">
-            <div>作成: {{ importResult.created_count }}件 / 更新: {{ importResult.updated_count }}件 / エラー: {{ importResult.error_count }}件</div>
+          <v-alert
+            v-if="importResult"
+            :type="importResult.error_count > 0 ? 'warning' : 'success'"
+            class="mt-2"
+            density="compact"
+          >
+            <div>
+              作成: {{ importResult.created_count }}件 / 更新: {{ importResult.updated_count }}件 /
+              エラー: {{ importResult.error_count }}件
+            </div>
             <div v-if="importResult.created_tags.length > 0" class="mt-1 text-caption">
               新規タグ作成: {{ importResult.created_tags.join(', ') }}
             </div>
@@ -102,7 +115,9 @@
               <div v-for="(err, i) in importResult.errors" :key="i">{{ err }}</div>
             </div>
           </v-alert>
-          <v-alert v-if="importError" type="error" class="mt-2" density="compact">{{ importError }}</v-alert>
+          <v-alert v-if="importError" type="error" class="mt-2" density="compact">{{
+            importError
+          }}</v-alert>
         </v-card-text>
         <v-card-actions>
           <v-spacer />
@@ -126,25 +141,27 @@
       :items="filteredQuizzes"
       :loading="store.loading"
       :group-by="groupBy"
+      :items-per-page="100"
       item-value="id"
+      density="compact"
       hover
       fixed-header
       no-data-text="クイズがありません"
     >
       <template #item.question="{ item }">
-        <span class="text-body-2">{{ item.question }}</span>
+        <span class="text-caption">{{ item.question }}</span>
       </template>
       <template #item.tags="{ item }">
-        <v-chip v-for="tag in item.tags" :key="tag.id" size="small" class="mr-1">
+        <v-chip v-for="tag in item.tags" :key="tag.id" size="x-small" variant="tonal" class="mr-1">
           {{ tag.name }}
         </v-chip>
       </template>
       <template #item.actions="{ item }">
-        <v-btn icon="mdi-pencil" variant="text" size="small" :to="`/quizzes/${item.id}/edit`" />
+        <v-btn icon="mdi-pencil" variant="text" size="x-small" :to="`/quizzes/${item.id}/edit`" />
         <v-btn
           icon="mdi-delete"
           variant="text"
-          size="small"
+          size="x-small"
           color="error"
           @click="handleDelete(item.id)"
         />
@@ -179,16 +196,18 @@ const importResult = ref<{
   created_tags: string[]
 } | null>(null)
 const importError = ref<string | null>(null)
-const sampleCsvUrl = import.meta.env.PROD ? '/api/quiz/csv/sample' : 'http://localhost:8888/api/quiz/csv/sample'
+const sampleCsvUrl = import.meta.env.PROD
+  ? '/api/quiz/csv/sample'
+  : 'http://localhost:8888/api/quiz/csv/sample'
 
 const groupBy = [{ key: 'category_name', order: 'asc' as const }]
 
 const headers = [
-  { title: 'ID', key: 'id', width: '70px' },
-  { title: 'Slug', key: 'slug', width: '150px' },
+  { title: 'ID', key: 'id', width: '50px' },
+  { title: 'Slug', key: 'slug', width: '130px' },
   { title: '問題文', key: 'question' },
-  { title: 'タグ', key: 'tags', sortable: false, width: '200px' },
-  { title: '操作', key: 'actions', sortable: false, width: '120px', align: 'center' as const },
+  { title: 'タグ', key: 'tags', sortable: false, width: '160px' },
+  { title: '操作', key: 'actions', sortable: false, width: '160px', align: 'center' as const },
 ]
 
 const categoryItems = computed(() => [
@@ -205,9 +224,7 @@ const filteredQuizzes = computed(() => {
   }
 
   if (selectedTagSlug.value) {
-    quizzes = quizzes.filter((q) =>
-      q.tags?.some((t) => t.slug === selectedTagSlug.value),
-    )
+    quizzes = quizzes.filter((q) => q.tags?.some((t) => t.slug === selectedTagSlug.value))
   }
 
   if (searchQuery.value) {
@@ -302,9 +319,29 @@ onMounted(() => {
 </script>
 
 <style scoped>
-/* Vuetify の v-data-table は height prop しか提供していないので、CSSで上書きします。 */
+.quiz-list-page {
+  font-size: 0.8125rem;
+}
+
 .quiz-table :deep(.v-table__wrapper) {
-  max-height: calc(100vh - 320px);
+  max-height: calc(100vh - 200px);
   overflow-y: auto;
+}
+
+.quiz-table :deep(th) {
+  font-size: 0.75rem !important;
+  white-space: nowrap;
+}
+
+.quiz-table :deep(td) {
+  font-size: 0.75rem !important;
+  padding-top: 4px !important;
+  padding-bottom: 4px !important;
+}
+
+.quiz-table :deep(.v-data-table-group-header-row td) {
+  font-size: 0.8rem !important;
+  padding-top: 4px !important;
+  padding-bottom: 4px !important;
 }
 </style>

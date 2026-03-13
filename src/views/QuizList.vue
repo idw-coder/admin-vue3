@@ -2,7 +2,7 @@
   <div class="quiz-list-page">
     <div class="d-flex align-center justify-space-between mb-2">
       <h1 class="text-subtitle-1 font-weight-bold">クイズ管理</h1>
-      <div class="d-flex gap-1">
+      <div class="d-flex ga-2">
         <v-btn
           variant="tonal"
           size="small"
@@ -135,38 +135,46 @@
       </v-card>
     </v-dialog>
 
-    <v-data-table
-      class="quiz-table"
-      :headers="headers"
-      :items="filteredQuizzes"
-      :loading="store.loading"
-      :group-by="groupBy"
-      :items-per-page="100"
-      item-value="id"
-      density="compact"
-      hover
-      fixed-header
-      no-data-text="クイズがありません"
-    >
-      <template #item.question="{ item }">
-        <span class="text-caption">{{ item.question }}</span>
-      </template>
-      <template #item.tags="{ item }">
-        <v-chip v-for="tag in item.tags" :key="tag.id" size="x-small" variant="tonal" class="mr-1">
-          {{ tag.name }}
-        </v-chip>
-      </template>
-      <template #item.actions="{ item }">
-        <v-btn icon="mdi-pencil" variant="text" size="x-small" :to="`/quizzes/${item.id}/edit`" />
-        <v-btn
-          icon="mdi-delete"
-          variant="text"
-          size="x-small"
-          color="error"
-          @click="handleDelete(item.id)"
-        />
-      </template>
-    </v-data-table>
+    <v-card>
+      <v-data-table
+        class="quiz-table"
+        :headers="headers"
+        :items="filteredQuizzes"
+        :loading="store.loading"
+        :group-by="groupBy"
+        :items-per-page="100"
+        item-value="id"
+        density="compact"
+        hover
+        fixed-header
+        no-data-text="クイズがありません"
+      >
+        <template #item.question="{ item }">
+          <span class="text-caption">{{ item.question }}</span>
+        </template>
+        <template #item.tags="{ item }">
+          <v-chip
+            v-for="tag in item.tags"
+            :key="tag.id"
+            size="x-small"
+            variant="tonal"
+            class="mr-1"
+          >
+            {{ tag.name }}
+          </v-chip>
+        </template>
+        <template #item.actions="{ item }">
+          <v-btn icon="mdi-pencil" variant="text" size="x-small" :to="`/quizzes/${item.id}/edit`" />
+          <v-btn
+            icon="mdi-delete"
+            variant="text"
+            size="x-small"
+            color="error"
+            @click="handleDelete(item.id)"
+          />
+        </template>
+      </v-data-table>
+    </v-card>
   </div>
 </template>
 

@@ -306,18 +306,29 @@ function buildPrompt(topic: string): string {
     { "choice_text": "選択肢3", "is_correct": false },
     { "choice_text": "選択肢4", "is_correct": false }
   ],
-  "explanation": "<p>HTML形式の解説</p>",
+  "explanation": "<p>HTML形式の解説（詳細は下記の条件を参照）</p>",
   "tags": ["関連タグをケバブケースで", "例: javascript"]
 }
 
 条件:
 - is_correct が true の選択肢は必ず1つだけ
 - 実務や学習で役立つ実践的な内容にしてください
-- 解説は丁寧にHTML形式で記述してください
 - slug・tags は英語のケバブケースで出力してください
 - 重要: JSON文字列内のダブルクォートは必ず \\" でエスケープしてください
 - HTML属性にはダブルクォートではなくシングルクォートを使ってください（例: <code class='example'>）
-- コード例は &lt;pre&gt;&lt;code&gt; タグで囲み、中のHTMLタグは &amp;lt; &amp;gt; でエスケープしてください`
+- コード例は &lt;pre&gt;&lt;code&gt; タグで囲み、中のHTMLタグは &amp;lt; &amp;gt; でエスケープしてください
+
+解説（explanation）の作成ルール:
+- 500〜800文字程度のボリュームで、読者が「この解説だけで理解できた」と感じる深さにしてください
+- 以下の構成をHTML形式で記述してください:
+  1. <h3>正解と要点</h3> — 正解の選択肢を明示し、核心を1〜2文で要約
+  2. <h3>なぜその答えなのか</h3> — 正解の理由と、他の選択肢が不正解である理由を具体的に説明
+  3. <h3>背景・仕組み</h3> — トピックの基礎概念・仕組み・歴史的背景など、検索ユーザーが求める周辺知識を補足
+  4. <h3>実務での活用例</h3> — 現場やプロジェクトでどう活きるか、具体的なユースケースやベストプラクティスを紹介
+  5. （該当する場合）コード例を <pre><code> タグで示し、動作がイメージできるようにする
+- 専門用語には初出時に簡潔な説明を添えてください
+- 「つまり」「具体的には」「たとえば」などの接続表現を使い、読みやすい文章にしてください
+- 箇条書き（<ul><li>）や強調（<strong>）を適切に使い、視覚的に読みやすくしてください`
 }
 
 async function copyPrompt() {
@@ -509,8 +520,9 @@ async function handleSubmit() {
       await store.updateQuiz(Number(id), payload)
     }
     showSnackbar('保存しました')
-  } catch (e: any) {
-    error.value = e?.response?.data?.error ?? '保存に失敗しました'
+  } catch (e: unknown) {
+    const axiosErr = e as { response?: { data?: { error?: string } } }
+    error.value = axiosErr.response?.data?.error ?? '保存に失敗しました'
   } finally {
     saving.value = false
   }

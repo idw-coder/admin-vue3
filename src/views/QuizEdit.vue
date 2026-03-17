@@ -8,12 +8,7 @@
       <v-card-title class="d-flex align-center flex-wrap ga-2">
         <span class="text-h6">{{ isNew ? '新規クイズ作成' : 'クイズを編集' }}</span>
         <v-spacer />
-        <v-btn
-          variant="tonal"
-          size="small"
-          prepend-icon="mdi-import"
-          @click="importDialog = true"
-        >
+        <v-btn variant="tonal" size="small" prepend-icon="mdi-import" @click="importDialog = true">
           インポート
         </v-btn>
         <v-btn variant="tonal" size="small" prepend-icon="mdi-export" @click="exportJson">
@@ -159,9 +154,7 @@
       </v-card-text>
 
       <v-card-actions class="px-4 pb-4">
-        <v-btn color="primary" variant="flat" :loading="saving" @click="handleSubmit">
-          保存
-        </v-btn>
+        <v-btn color="primary" variant="flat" :loading="saving" @click="handleSubmit"> 保存 </v-btn>
         <v-btn variant="text" to="/quizzes">キャンセル</v-btn>
       </v-card-actions>
     </v-card>
@@ -191,12 +184,7 @@
         <v-card-actions>
           <v-spacer />
           <v-btn variant="text" @click="closeImportDialog">キャンセル</v-btn>
-          <v-btn
-            color="primary"
-            variant="flat"
-            :disabled="!importJson.trim()"
-            @click="applyImport"
-          >
+          <v-btn color="primary" variant="flat" :disabled="!importJson.trim()" @click="applyImport">
             取り込み
           </v-btn>
         </v-card-actions>
@@ -255,8 +243,7 @@ const rules = {
     if (typeof v === 'string') return v.trim().length > 0 || '必須項目です'
     return v != null || '必須項目です'
   },
-  correctSelected: (v: unknown) =>
-    (v !== null && v !== undefined) || '正解を選択してください',
+  correctSelected: (v: unknown) => (v !== null && v !== undefined) || '正解を選択してください',
 }
 
 // --- Helpers ---
@@ -319,13 +306,15 @@ function buildPrompt(topic: string): string {
 - コード例は &lt;pre&gt;&lt;code&gt; タグで囲み、中のHTMLタグは &amp;lt; &amp;gt; でエスケープしてください
 
 解説（explanation）の作成ルール:
-- 500〜800文字程度のボリュームで、読者が「この解説だけで理解できた」と感じる深さにしてください
+- 600〜1000文字程度のボリュームで、読者が「この解説だけで理解できた」と感じる深さにしてください
 - 以下の構成をHTML形式で記述してください:
   1. <h3>正解と要点</h3> — 正解の選択肢を明示し、核心を1〜2文で要約
-  2. <h3>なぜその答えなのか</h3> — 正解の理由と、他の選択肢が不正解である理由を具体的に説明
+  2. <h3>なぜその答えなのか</h3> — 正解の理由と、他の選択肢が不正解である理由を具体的に説明。関連メソッドや概念との違いを明示し、「○○ △△ 違い」で検索されるような比較フレーズを自然に含めてください
   3. <h3>背景・仕組み</h3> — トピックの基礎概念・仕組み・歴史的背景など、検索ユーザーが求める周辺知識を補足
-  4. <h3>実務での活用例</h3> — 現場やプロジェクトでどう活きるか、具体的なユースケースやベストプラクティスを紹介
-  5. （該当する場合）コード例を <pre><code> タグで示し、動作がイメージできるようにする
+  4. <h3>よくあるミスとエラー</h3> — そのトピックで実際に遭遇しがちなエラーメッセージ（例: "TypeError: xxx is not a function"）や初学者がハマるアンチパターンを1〜2個、コード付きで紹介してください
+  5. <h3>実務での活用例</h3> — 現場やプロジェクトでどう活きるか、具体的なユースケースやベストプラクティスを紹介
+  6. （該当する場合）コード例を <pre><code> タグで示し、動作がイメージできるようにする
+- 問題文や解説に、実際にユーザーが検索しそうな自然言語のフレーズ（例:「配列から条件に合う要素だけ取り出すには」「○○と△△の違い」）を意識して含めてください
 - 専門用語には初出時に簡潔な説明を添えてください
 - 「つまり」「具体的には」「たとえば」などの接続表現を使い、読みやすい文章にしてください
 - 箇条書き（<ul><li>）や強調（<strong>）を適切に使い、視覚的に読みやすくしてください`
@@ -375,11 +364,7 @@ function repairJson(input: string): string {
         const after = input.slice(i + 1).trimStart()
         const next = after[0] as string | undefined
         const isEndOfString =
-          next === undefined ||
-          next === ',' ||
-          next === ':' ||
-          next === '}' ||
-          next === ']'
+          next === undefined || next === ',' || next === ':' || next === '}' || next === ']'
 
         if (isEndOfString) {
           inStr = false
@@ -422,21 +407,15 @@ interface QuizImportData {
  * Tiptap（DOM）がそれをHTML要素として解釈しないようにする。
  */
 function escapeHtmlInCodeBlocks(html: string): string {
-  return html.replace(
-    /<pre[^>]*><code[^>]*>([\s\S]*?)<\/code><\/pre>/gi,
-    (_, content: string) => {
-      const decoded = content
-        .replace(/&amp;/g, '&')
-        .replace(/&lt;/g, '<')
-        .replace(/&gt;/g, '>')
-        .replace(/&quot;/g, '"')
-      const escaped = decoded
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-      return `<pre><code>${escaped}</code></pre>`
-    },
-  )
+  return html.replace(/<pre[^>]*><code[^>]*>([\s\S]*?)<\/code><\/pre>/gi, (_, content: string) => {
+    const decoded = content
+      .replace(/&amp;/g, '&')
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
+      .replace(/&quot;/g, '"')
+    const escaped = decoded.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    return `<pre><code>${escaped}</code></pre>`
+  })
 }
 
 function applyImport() {

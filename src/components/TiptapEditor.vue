@@ -92,13 +92,37 @@ const emit = defineEmits<{
 // BlockNote の styles を Tiptap の marks に、bulletListItem/numberedListItem を
 // bulletList/orderedList > listItem 構造にグループ化する。
 
-function convertBlockNoteInline(content: any[]): any[] {
+interface BlockNoteInlineItem {
+  type: string
+  text?: string
+  styles?: { bold?: boolean; italic?: boolean; code?: boolean; strikethrough?: boolean }
+}
+
+interface BlockNoteBlock {
+  type: string
+  content?: BlockNoteInlineItem[]
+  props?: { level?: number; [key: string]: unknown }
+}
+
+interface TiptapMark {
+  type: string
+}
+
+interface TiptapNode {
+  type: string
+  text?: string
+  marks?: TiptapMark[]
+  content?: TiptapNode[]
+  attrs?: Record<string, unknown>
+}
+
+function convertBlockNoteInline(content: BlockNoteInlineItem[]): TiptapNode[] {
   if (!Array.isArray(content) || content.length === 0) return []
   return content
     .filter((item) => item.type === 'text' && item.text)
     .map((item) => {
-      const node: any = { type: 'text', text: item.text }
-      const marks: any[] = []
+      const node: TiptapNode = { type: 'text', text: item.text }
+      const marks: TiptapMark[] = []
       if (item.styles) {
         if (item.styles.bold) marks.push({ type: 'bold' })
         if (item.styles.italic) marks.push({ type: 'italic' })
@@ -110,57 +134,57 @@ function convertBlockNoteInline(content: any[]): any[] {
     })
 }
 
-function convertBlockNoteToTiptap(blocks: any[]): any {
-  const doc: any = { type: 'doc', content: [] }
+function convertBlockNoteToTiptap(blocks: BlockNoteBlock[]): TiptapNode {
+  const content: TiptapNode[] = []
   let i = 0
 
   while (i < blocks.length) {
-    const block = blocks[i]
+    const block = blocks[i]!
 
     if (block.type === 'bulletListItem') {
-      const items = []
-      while (i < blocks.length && blocks[i].type === 'bulletListItem') {
-        const inline = convertBlockNoteInline(blocks[i].content)
+      const items: TiptapNode[] = []
+      while (i < blocks.length && blocks[i]!.type === 'bulletListItem') {
+        const inline = convertBlockNoteInline(blocks[i]!.content ?? [])
         items.push({
           type: 'listItem',
           content: [{ type: 'paragraph', ...(inline.length ? { content: inline } : {}) }],
         })
         i++
       }
-      doc.content.push({ type: 'bulletList', content: items })
+      content.push({ type: 'bulletList', content: items })
       continue
     }
 
     if (block.type === 'numberedListItem') {
-      const items = []
-      while (i < blocks.length && blocks[i].type === 'numberedListItem') {
-        const inline = convertBlockNoteInline(blocks[i].content)
+      const items: TiptapNode[] = []
+      while (i < blocks.length && blocks[i]!.type === 'numberedListItem') {
+        const inline = convertBlockNoteInline(blocks[i]!.content ?? [])
         items.push({
           type: 'listItem',
           content: [{ type: 'paragraph', ...(inline.length ? { content: inline } : {}) }],
         })
         i++
       }
-      doc.content.push({ type: 'orderedList', content: items })
+      content.push({ type: 'orderedList', content: items })
       continue
     }
 
-    const inline = convertBlockNoteInline(block.content)
+    const inline = convertBlockNoteInline(block.content ?? [])
 
     if (block.type === 'heading') {
-      doc.content.push({
+      content.push({
         type: 'heading',
         attrs: { level: block.props?.level ?? 1 },
         ...(inline.length ? { content: inline } : {}),
       })
     } else if (block.type === 'codeBlock') {
-      const text = (block.content ?? []).map((c: any) => c.text ?? '').join('')
-      doc.content.push({
+      const text = (block.content ?? []).map((c) => c.text ?? '').join('')
+      content.push({
         type: 'codeBlock',
         ...(text ? { content: [{ type: 'text', text }] } : {}),
       })
     } else {
-      doc.content.push({
+      content.push({
         type: 'paragraph',
         ...(inline.length ? { content: inline } : {}),
       })
@@ -168,15 +192,15 @@ function convertBlockNoteToTiptap(blocks: any[]): any {
     i++
   }
 
-  if (doc.content.length === 0) {
-    doc.content.push({ type: 'paragraph' })
+  if (content.length === 0) {
+    content.push({ type: 'paragraph' })
   }
-  return doc
+  return { type: 'doc', content }
 }
 
 // BlockNote形式の判定: 配列かつ各要素に props がある場合はBlockNote由来とみなす
-function isBlockNoteFormat(data: any): boolean {
-  return Array.isArray(data) && data.length > 0 && data[0].props !== undefined
+function isBlockNoteFormat(data: unknown): data is BlockNoteBlock[] {
+  return Array.isArray(data) && data.length > 0 && (data[0] as BlockNoteBlock).props !== undefined
 }
 
 function parseContent(value: string) {
@@ -272,17 +296,35 @@ onBeforeUnmount(() => {
 
 .tiptap-editor .ProseMirror code {
   background: #f0f0f0;
-  padding: 2px 4px;
-  border-radius: 3px;
-  font-family: monospace;
+  padding: 2px 5px;
+  border-radius: 4px;
+  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+  font-size: 0.9em;
+  color: #e01e5a;
 }
 
 .tiptap-editor .ProseMirror pre {
-  background: #1e1e1e;
-  color: #d4d4d4;
-  padding: 12px;
-  border-radius: 4px;
-  font-family: monospace;
+  background: #282c34;
+  color: #abb2bf;
+  padding: 16px;
+  border-radius: 8px;
+  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+  font-size: 0.875em;
+  line-height: 1.6;
   overflow-x: auto;
+  margin: 8px 0;
+}
+
+.tiptap-editor .ProseMirror pre code {
+  background: none;
+  padding: 0;
+  border-radius: 0;
+  color: inherit;
+  font-size: inherit;
+}
+
+.tiptap-editor .ProseMirror ul,
+.tiptap-editor .ProseMirror ol {
+  padding-left: 1.5em;
 }
 </style>

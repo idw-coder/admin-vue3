@@ -23,7 +23,7 @@
             <v-icon size="small" class="mr-1">mdi-robot-outline</v-icon>
             AI生成支援
           </div>
-          <div class="d-flex align-center gap-2">
+          <div class="d-flex align-center ga-2">
             <v-text-field
               v-model="aiTopic"
               label="トピック（例: JavaScriptのクロージャ）"
@@ -89,7 +89,7 @@
 
           <div class="mb-4">
             <div class="text-subtitle-2 mb-2">タグ</div>
-            <div class="d-flex flex-wrap gap-2">
+            <div class="d-flex flex-wrap ga-2">
               <v-chip
                 v-for="tag in store.tags"
                 :key="tag.slug"

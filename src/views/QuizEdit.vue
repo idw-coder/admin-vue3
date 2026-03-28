@@ -307,6 +307,8 @@ function buildPrompt(topic: string): string {
 - 「なぜそうなるのか」を理解させることを重視し、丸暗記では対応できない問題にしてください
 - slug・tags は英語のケバブケースで出力してください
 - 重要: JSON文字列内のダブルクォートは必ず \\" でエスケープしてください
+- 重要: バックスラッシュ（\\）自体を文字列に含めたい場合は \\\\ と二重にエスケープしてください
+- 重要: JSON では \\", \\\\, \\/, \\n, \\r, \\t のみが有効なエスケープです。\\' や \\: のような無効なエスケープは絶対に使わないでください。シングルクォートはエスケープ不要でそのまま ' と書いてください
 - HTML属性にはダブルクォートではなくシングルクォートを使ってください（例: <code class='example'>）
 - コード例は &lt;pre&gt;&lt;code&gt; タグで囲み、中のHTMLタグは &amp;lt; &amp;gt; でエスケープしてください
 
@@ -347,6 +349,7 @@ function extractJsonFromText(text: string): string {
  * 後続トークン（: , } ] など）で判定してエスケープを挿入する。
  */
 function repairJson(input: string): string {
+  const VALID_ESCAPES = new Set(['"', '\\', '/', 'b', 'f', 'n', 'r', 't', 'u'])
   const out: string[] = []
   let inStr = false
   let i = 0
@@ -356,7 +359,17 @@ function repairJson(input: string): string {
 
     if (inStr) {
       if (ch === '\\') {
-        out.push(ch, input[i + 1] ?? '')
+        const next = input[i + 1]
+        if (next === undefined) {
+          out.push('\\\\')
+          i++
+          continue
+        }
+        if (VALID_ESCAPES.has(next)) {
+          out.push(ch, next)
+        } else {
+          out.push('\\\\', next)
+        }
         i += 2
         continue
       }

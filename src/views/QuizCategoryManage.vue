@@ -10,7 +10,7 @@
     <v-card class="mb-4">
       <v-card-title class="text-subtitle-1">カテゴリー追加</v-card-title>
       <v-card-text>
-        <div class="d-flex flex-wrap gap-2">
+        <div class="d-flex flex-wrap ga-2">
           <v-text-field
             v-model="newSlug"
             label="slug"
@@ -123,12 +123,7 @@
               <td>{{ cat.category_name }}</td>
               <td class="text-medium-emphasis">{{ cat.description || '-' }}</td>
               <td>
-                <v-btn
-                  icon="mdi-pencil"
-                  variant="text"
-                  size="small"
-                  @click="startEdit(cat)"
-                />
+                <v-btn icon="mdi-pencil" variant="text" size="small" @click="startEdit(cat)" />
                 <v-btn
                   icon="mdi-delete"
                   variant="text"

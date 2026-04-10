@@ -210,8 +210,9 @@ const router = useRouter()
 const store = useQuizStore()
 const formRef = ref<InstanceType<typeof VForm> | null>(null)
 
-const id = route.params.id as string | undefined
-const isNew = !id || id === 'new'
+const paramId = route.params.id as string | undefined
+const quizId = ref<number | null>(paramId && paramId !== 'new' ? Number(paramId) : null)
+const isNew = computed(() => quizId.value === null)
 
 // --- Form state ---
 const slug = ref('')
@@ -511,11 +512,12 @@ async function handleSubmit() {
       choices: choicesPayload,
       tags: selectedTags.value,
     }
-    if (isNew) {
+    if (isNew.value) {
       const created = await store.createQuiz(payload)
+      quizId.value = created.id
       router.replace(`/quizzes/${created.id}/edit`)
     } else {
-      await store.updateQuiz(Number(id), payload)
+      await store.updateQuiz(quizId.value!, payload)
     }
     showSnackbar('保存しました')
   } catch (e: unknown) {
@@ -530,8 +532,8 @@ async function handleSubmit() {
 onMounted(async () => {
   await Promise.all([store.fetchCategories(), store.fetchTags()])
 
-  if (!isNew && id) {
-    await store.fetchQuiz(Number(id))
+  if (!isNew.value && quizId.value) {
+    await store.fetchQuiz(quizId.value)
     const quiz = store.currentQuiz
     if (quiz) {
       slug.value = quiz.slug
@@ -550,7 +552,5 @@ onMounted(async () => {
     }
   }
 
-  const firstCategory = store.categories[0]
-  if (firstCategory) categoryId.value = firstCategory.id
 })
 </script>
